@@ -4,3 +4,5 @@ Datas/
 .DS_Store
 *.txt
 *.csv
+Pipfile
+Pipfile.lock
