@@ -66,7 +66,7 @@ from keras.utils.np_utils import to_categorical
 maxlen = 50
 training_samples = 8000 # training data 80 : validation data 20
 validation_samples = 1000
-test_samples = len(lines) - (training_samples + validation_samples)
+test_samples = len(lines) - (training_samples) #+ validation_samples)
 max_words = 20000
 
 # word indexを作成
@@ -186,30 +186,28 @@ def macro_f_measure(y_true, y_pred):
 
 # +
 p_input = Input(shape=(50, ), dtype='int32', name='input_postText')
-i_input = Input(shape=(1, ), name='input_ids')
+u_input = Input(shape=(1, ), dtype='int32', name='input_userID')
 
-#テキストの学習
-em = Embedding(input_dim=20000, output_dim=50, input_length=50)(p_input)
+
+#em = Embedding(input_dim=20000, output_dim=1024, input_length=50)(p_input)
+#shered_lstm = LSTM(32)
+#p_lstm = shered_lstm(em)
+#u_lstm = shered_lstm(u_input)
+
+x = concatenate([p_input, u_input])
+em = Embedding(input_dim=20000, output_dim=50, input_length=51)(x)
 d_em = Dropout(0.5)(em)
 lstm_out = LSTM(32)(d_em)
 d_lstm_out = Dropout(0.5)(lstm_out)
-#2つ目のデータ学習
-i2 = Dense(32, activation='relu', name = 'dence1')(i_input)
-d_i2 = Dropout(0.5)(i2)
-x = concatenate([d_lstm_out, d_i2])
+output = Dense(2, activation='softmax', name = 'output')(d_lstm_out)
 
-m2 = Dense(32, activation='relu', name = 'dence')(x)
-d_m2 = Dropout(0.5)(m2)
-output = Dense(2, activation='softmax', name = 'output')(d_m2)
-
-optimizer = Adam(lr=1e-3, )
-model = Model(inputs=[p_input, i_input], outputs = output)
-model.compile(optimizer=optimizer, loss='categorical_crossentropy',  metrics=['acc', macro_precision, macro_recall, macro_f_measure])
+model = Model(inputs=[p_input, u_input], outputs = output)
+model.compile(optimizer='Adam', loss='categorical_crossentropy',  metrics=['acc', macro_precision, macro_recall, macro_f_measure])
 model.summary()
-#plot_model(model, show_shapes=True, show_layer_names=True, to_file='model2.png')
+#plot_model(model, show_shapes=True, show_layer_names=True, to_file='MultiParameter_model.png')
 
 
-#early_stopping = EarlyStopping(patience=0, verbose=1)
+early_stopping = EarlyStopping(patience=0, verbose=1)
 # -
 
 history = model.fit([x1_train, x2_train], y_train,
@@ -245,44 +243,6 @@ ax_acc.set_xlabel('epochs')
 ax_acc.set_ylabel('Validation acc')
 ax_loss.grid(True)
 ax_loss.set_ylabel('Validation loss')
-
-plt.show()
-
-# +
-acc = history.history['acc']
-loss = history.history['loss']
-epochs = range(1, len(val_acc) + 1)
-
-fig = plt.figure()
-ax_acc = fig.add_subplot(111)
-ax_acc.plot(epochs, acc, 'b--', label='Training acc')
-plt.legend(bbox_to_anchor=(0, 1), loc='upper left', borderaxespad=0.5, fontsize=10)
-
-ax_loss = ax_acc.twinx()
-ax_loss.plot(epochs, loss, 'b', label='Training loss')
-plt.legend(bbox_to_anchor=(0, 0.9), loc='upper left', borderaxespad=0.5, fontsize=10)
-plt.title('Training acc and Training loss')
-ax_acc.set_xlabel('epochs')
-ax_acc.set_ylabel('Training acc')
-ax_loss.grid(True)
-ax_loss.set_ylabel('Training loss')
-
-plt.show()
-
-# +
-fig = plt.figure()
-ax_acc = fig.add_subplot(111)
-ax_acc.plot(epochs, acc, 'b--', label='Training acc')
-plt.legend(bbox_to_anchor=(0, 1), loc='upper left', borderaxespad=0.5, fontsize=10)
-
-ax_loss = ax_acc.twinx()
-ax_loss.plot(epochs, val_acc, 'b', label='Validation acc')
-plt.legend(bbox_to_anchor=(0, 0.9), loc='upper left', borderaxespad=0.5, fontsize=10)
-plt.title('Training acc and Validation acc')
-ax_acc.set_xlabel('epochs')
-ax_acc.set_ylabel('Training acc')
-ax_loss.grid(True)
-ax_loss.set_ylabel('Validation acc')
 
 plt.show()
 # -
