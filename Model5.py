@@ -185,26 +185,29 @@ def macro_f_measure(y_true, y_pred):
 
 # +
 p_input = Input(shape=(50, ), dtype='int32', name='input_postText')
-u_input = Input(shape=(1, ), dtype='int32', name='input_userID')
+t_input = Input(shape=(10, ), dtype='int32', name='Input_tag')
+o_input = Input(shape=(1,), name='input_others')
 
-
-#em = Embedding(input_dim=20000, output_dim=1024, input_length=50)(p_input)
-#shered_lstm = LSTM(32)
-#p_lstm = shered_lstm(em)
-#u_lstm = shered_lstm(u_input)
-
-x = concatenate([p_input, u_input])
-em = Embedding(input_dim=20000, output_dim=50, input_length=51)(x)
+#テキストとタグの学習
+x = concatenate([p_input, t_input])
+em = Embedding(input_dim=20000, output_dim=60, input_length=60)(x)
 d_em = Dropout(0.5)(em)
 lstm_out = LSTM(32)(d_em)
 d_lstm_out = Dropout(0.5)(lstm_out)
-output = Dense(2, activation='softmax', name = 'output')(d_lstm_out)
 
-model = Model(inputs=[p_input, u_input], outputs = output)
+#3つ目のデータ学習
+i3 = Dense(16, activation='relu', name='dence1')(o_input)
+d_i3 = Dropout(0.5)(i3)
+
+x2 = concatenate([d_lstm_out, d_i3])
+m2 = Dense(16, activation='relu', name = 'dence')(x2)
+d_m2 = Dropout(0.5)(m2)
+output = Dense(2, activation='softmax', name = 'output')(d_m2)
+
+model = Model(inputs=[p_input, t_input, o_input], outputs = output)
 model.compile(optimizer='Adam', loss='categorical_crossentropy',  metrics=['acc', macro_precision, macro_recall, macro_f_measure])
 model.summary()
 #plot_model(model, show_shapes=True, show_layer_names=True, to_file='MultiParameter_model.png')
-
 
 early_stopping = EarlyStopping(patience=0, verbose=1)
 # -

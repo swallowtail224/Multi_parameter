@@ -18,6 +18,11 @@ from keras.models import Model
 from keras.callbacks import EarlyStopping
 from keras.utils import plot_model
 import numpy as np
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+from keras.utils.np_utils import to_categorical
+import keras.backend as K
+from functools import partial
 
 # +
 #ツイートのテキスト読み込み
@@ -57,11 +62,6 @@ for i in uID:
 n_postUser = np.array(post_user)
 
 # +
-from keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
-import numpy as np
-from keras.utils.np_utils import to_categorical
-
 maxlen = 50
 training_samples = 8000 # training data 80 : validation data 20
 validation_samples = 1000
@@ -108,10 +108,8 @@ x1_val = data[training_samples: training_samples + validation_samples]
 x2_val = users[training_samples: training_samples + validation_samples]
 y_val = labels[training_samples: training_samples + validation_samples]
 
-# +
-import keras.backend as K
-from functools import partial
 
+# +
 def normalize_y_pred(y_pred):
     return K.one_hot(K.argmax(y_pred), y_pred.shape[-1])
 
@@ -186,22 +184,27 @@ def macro_f_measure(y_true, y_pred):
 # +
 p_input = Input(shape=(50, ), dtype='int32', name='input_postText')
 o1_input = Input(shape=(1, ), name='input_other1')
-o2_input = Input(shape=(1,), name='input_other2')
+o2_input = Input(shape=(2,), name='input_other2')
 
 #テキストの学習
 em = Embedding(input_dim=20000, output_dim=50, input_length=50)(p_input)
-lstm_out = LSTM(32)(em)
+d_em = Dropout(0.5)(em)
+lstm_out = LSTM(32)(d_em)
+d_lstm_out = Dropout(0.5)(lstm_out)
 #2つ目の入力
-i2 = Dense(64, activation='relu', name = 'dence1')(o1_input)
+i2 = Dense(16, activation='relu', name = 'dence1')(o1_input)
+d_i2 = Dropout(0.5)(i2)
 #3つ目の入力
-i3 = Dense(64, activation='relu', name = 'dence2')(o2_input)
+i3 = Dense(16, activation='relu', name = 'dence2')(o2_input)
+d_i3 = Dropout(0.5)(i3)
 
-x = concatenate([lstm_out, i_input])
+x = concatenate([d_lstm_out, d_i2, d_i3])
 
-m2 = Dense(64, activation='relu', name = 'dence')(x)
-output = Dense(2, activation='softmax', name = 'output')(m2)
+m2 = Dense(16, activation='relu', name = 'dence')(x)
+d_m2 = Dropout(0.5)(m2)
+output = Dense(2, activation='softmax', name = 'output')(d_m2)
 
-model = Model(inputs=[p_input, i_input], outputs = output)
+model = Model(inputs=[p_input, o1_input, o2_input], outputs = output)
 model.compile(optimizer='Adam', loss='categorical_crossentropy',  metrics=['acc', macro_precision, macro_recall, macro_f_measure])
 model.summary()
 #plot_model(model, show_shapes=True, show_layer_names=True, to_file='model2.png')

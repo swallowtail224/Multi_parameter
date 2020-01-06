@@ -18,6 +18,12 @@ from keras.models import Model
 from keras.callbacks import EarlyStopping
 from keras.utils import plot_model
 import numpy as np
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+import numpy as np
+from keras.utils.np_utils import to_categorical
+import keras.backend as K
+from functools import partial
 
 # +
 #ツイートのテキスト読み込み
@@ -57,11 +63,6 @@ for i in uID:
 n_postUser = np.array(post_user)
 
 # +
-from keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
-import numpy as np
-from keras.utils.np_utils import to_categorical
-
 maxlen = 50
 training_samples = 8000 # training data 80 : validation data 20
 validation_samples = 1000
@@ -108,10 +109,8 @@ x1_val = data[training_samples: training_samples + validation_samples]
 x2_val = users[training_samples: training_samples + validation_samples]
 y_val = labels[training_samples: training_samples + validation_samples]
 
-# +
-import keras.backend as K
-from functools import partial
 
+# +
 def normalize_y_pred(y_pred):
     return K.one_hot(K.argmax(y_pred), y_pred.shape[-1])
 

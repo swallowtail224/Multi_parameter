@@ -18,6 +18,12 @@ from keras.models import Model
 from keras.callbacks import EarlyStopping
 from keras.utils import plot_model
 import numpy as np
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+import numpy as np
+from keras.utils.np_utils import to_categorical
+import keras.backend as K
+from functools import partial
 
 # +
 #ツイートのテキスト読み込み
@@ -57,11 +63,6 @@ for i in uID:
 n_postUser = np.array(post_user)
 
 # +
-from keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
-import numpy as np
-from keras.utils.np_utils import to_categorical
-
 maxlen = 50
 training_samples = 8000 # training data 80 : validation data 20
 validation_samples = 1000
@@ -108,10 +109,8 @@ x1_val = data[training_samples: training_samples + validation_samples]
 x2_val = users[training_samples: training_samples + validation_samples]
 y_val = labels[training_samples: training_samples + validation_samples]
 
-# +
-import keras.backend as K
-from functools import partial
 
+# +
 def normalize_y_pred(y_pred):
     return K.one_hot(K.argmax(y_pred), y_pred.shape[-1])
 
@@ -185,18 +184,19 @@ def macro_f_measure(y_true, y_pred):
 
 # +
 p_input = Input(shape=(50, ), dtype='int32', name='input_postText')
-t_input = Input(shape=(5, ), dtype='int32', name='Input_tag')
+t_input = Input(shape=(10, ), dtype='int32', name='Input_tag')
 
 x = concatenate([p_input, t_input])
-em = Embedding(input_dim=20000, output_dim=55, input_length=55)(x)
-lstm_out = LSTM(32)(em)
-output = Dense(2, activation='softmax', name = 'output')(lstm_out)
+em = Embedding(input_dim=20000, output_dim=60, input_length=60)(x)
+d_em = Dropout(0.5)(em)
+lstm_out = LSTM(32)(d_em)
+d_lstm_out = Dropout(0.5)(lstm_out)
+output = Dense(2, activation='softmax', name = 'output')(d_lstm_out)
 
 model = Model(inputs=[p_input, t_input], outputs = output)
 model.compile(optimizer='Adam', loss='categorical_crossentropy',  metrics=['acc', macro_precision, macro_recall, macro_f_measure])
 model.summary()
 #plot_model(model, show_shapes=True, show_layer_names=True, to_file='MultiParameter_model.png')
-
 
 early_stopping = EarlyStopping(patience=0, verbose=1)
 # -
