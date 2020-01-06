@@ -185,22 +185,39 @@ def macro_f_measure(y_true, y_pred):
 
 # +
 p_input = Input(shape=(50, ), dtype='int32', name='input_postText')
-i_input = Input(shape=(1, ), name='input_ids')
+t_input = Input(shape=(10, ), dtype='int32', name='Input_tag')
+u_input = Input(shape=(1,), name='input_id')
+i_input = nput(shape=(1,), name='input_image')
+d_input = Input(shape=(2,), name='input_postdate')
 
-#テキストの学習
-em = Embedding(input_dim=20000, output_dim=50, input_length=50)(p_input)
-lstm_out = LSTM(32)(em)
-#2つ目のデータと結合
-x = concatenate([lstm_out, i_input])
+#テキストとタグの学習
+x = concatenate([p_input, t_input])
+em = Embedding(input_dim=20000, output_dim=60, input_length=60)(x)
+d_em = Dropout(0.5)(em)
+lstm_out = LSTM(32)(d_em)
+d_lstm_out = Dropout(0.5)(lstm_out)
 
-m2 = Dense(64, activation='relu', name = 'dence')(x)
-output = Dense(2, activation='softmax', name = 'output')(m2)
+#3つ目のデータ学習
+user = Dense(16, activation='relu', name='dence1')(u_input)
+d_user = Dropout(0.5)(user)
 
-model = Model(inputs=[p_input, i_input], outputs = output)
+#4つ目のデータ学習
+image = Dense(16, activation='relu', name='dence1')(i_input)
+d_image = Dropout(0.5)(image)
+
+#5つ目のデータ学習
+pdate = Dense(16, activation='relu', name='dence1')(d_input)
+d_pdate = Dropout(0.5)(pdate)
+
+x2 = concatenate([d_lstm_out, d_user, d_image, d_pdate])
+m2 = Dense(16, activation='relu', name = 'dence')(x2)
+d_m2 = Dropout(0.5)(m2)
+output = Dense(2, activation='softmax', name = 'output')(d_m2)
+
+model = Model(inputs=[p_input, t_input, o_input], outputs = output)
 model.compile(optimizer='Adam', loss='categorical_crossentropy',  metrics=['acc', macro_precision, macro_recall, macro_f_measure])
 model.summary()
-#plot_model(model, show_shapes=True, show_layer_names=True, to_file='model2.png')
-
+#plot_model(model, show_shapes=True, show_layer_names=True, to_file='model8.png')
 
 early_stopping = EarlyStopping(patience=0, verbose=1)
 # -
