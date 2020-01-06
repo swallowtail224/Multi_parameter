@@ -184,40 +184,40 @@ def macro_f_measure(y_true, y_pred):
 
 
 # +
-p_input = Input(shape=(50, ), dtype='int32', name='input_postText')
+p_input = Input(shape=(50, ), dtype='int32', name='Input_postText')
 t_input = Input(shape=(10, ), dtype='int32', name='Input_tag')
-u_input = Input(shape=(1,), name='input_id')
-i_input = nput(shape=(1,), name='input_image')
-d_input = Input(shape=(2,), name='input_postdate')
+u_input = Input(shape=(1,), name='Input_id')
+i_input = Input(shape=(1,), name='Input_image')
+d_input = Input(shape=(2,), name='Input_postdate')
 
 #テキストとタグの学習
-x = concatenate([p_input, t_input])
-em = Embedding(input_dim=20000, output_dim=60, input_length=60)(x)
-d_em = Dropout(0.5)(em)
-lstm_out = LSTM(32)(d_em)
-d_lstm_out = Dropout(0.5)(lstm_out)
+x = concatenate([p_input, t_input], name='merge1')
+em = Embedding(input_dim=20000, output_dim=60, input_length=60, name='Embedding')(x)
+#d_em = Dropout(0.5)(em)
+lstm_out = LSTM(32, name='LSTM')(em)
+#d_lstm_out = Dropout(0.5)(lstm_out)
 
 #3つ目のデータ学習
-user = Dense(16, activation='relu', name='dence1')(u_input)
-d_user = Dropout(0.5)(user)
+user = Dense(16, activation='relu', name='user_dence')(u_input)
+#d_user = Dropout(0.5)(user)
 
 #4つ目のデータ学習
-image = Dense(16, activation='relu', name='dence1')(i_input)
-d_image = Dropout(0.5)(image)
+image = Dense(16, activation='relu', name='image_dence')(i_input)
+#d_image = Dropout(0.5)(image)
 
 #5つ目のデータ学習
-pdate = Dense(16, activation='relu', name='dence1')(d_input)
-d_pdate = Dropout(0.5)(pdate)
+pdate = Dense(16, activation='relu', name='pdate_dence')(d_input)
+#d_pdate = Dropout(0.5)(pdate)
 
-x2 = concatenate([d_lstm_out, d_user, d_image, d_pdate])
+x2 = concatenate([lstm_out, user, image, pdate], name='merge2')
 m2 = Dense(16, activation='relu', name = 'dence')(x2)
-d_m2 = Dropout(0.5)(m2)
-output = Dense(2, activation='softmax', name = 'output')(d_m2)
+#d_m2 = Dropout(0.5)(m2)
+output = Dense(2, activation='softmax', name = 'output')(m2)
 
-model = Model(inputs=[p_input, t_input, o_input], outputs = output)
+model = Model(inputs=[p_input, t_input, u_input, i_input, d_input], outputs = output)
 model.compile(optimizer='Adam', loss='categorical_crossentropy',  metrics=['acc', macro_precision, macro_recall, macro_f_measure])
 model.summary()
-#plot_model(model, show_shapes=True, show_layer_names=True, to_file='model8.png')
+#plot_model(model, show_shapes=True, show_layer_names=True, to_file='model_image/model8.png')
 
 early_stopping = EarlyStopping(patience=0, verbose=1)
 # -
