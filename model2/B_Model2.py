@@ -25,6 +25,7 @@ from keras.utils.np_utils import to_categorical
 import keras.backend as K
 from functools import partial
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 # +
@@ -105,32 +106,9 @@ def weight_variable(shape):
 # -
 
 #データの読み込み
-use_data = pd.read_csv(filepath_or_buffer="Datas/pickup_data.csv", encoding="utf_8", sep=",")
+use_data = pd.read_csv(filepath_or_buffer="multi_data.csv", encoding="utf_8", sep=",")
 print(len(use_data))
 use_data.info()
-
-#userID
-test = open("user.txt","r", encoding="utf-8")
-uID = test.readlines()
-test.close()
-print(len(uID))
-
-id_list = []
-for i in uID:
-    if i in id_list:
-        continue
-    else:
-        id_list.append(i)
-
-print(len(id_list))
-
-post_user = []
-for i in uID:
-    for j in range(len(id_list)):
-        if i == id_list[j]:
-            post_user.append(j)
-
-n_postUser = np.array(post_user)
 
 # +
 maxlen = 50
@@ -138,43 +116,45 @@ train = 0.7
 validation = 0.1
 max_words = 20000
 
+#データをランダムにシャッフル
+use_data_s = use_data.sample(frac=1, random_state=150)
+
 # word indexを作成
 tokenizer = Tokenizer(num_words=max_words)
-tokenizer.fit_on_texts(lines)
-sequences = tokenizer.texts_to_sequences(lines)
+tokenizer.fit_on_texts(use_data_s['tweet2'])
+sequences = tokenizer.texts_to_sequences(use_data_s['tweet2'])
 
 word_index = tokenizer.word_index
 print("Found {} unique tokens.".format(len(word_index)))
 
 data = pad_sequences(sequences, maxlen=maxlen)
 
-# バイナリの行列に変換
-categorical_labels = to_categorical(label)
+#sin,cosデータをまとめてnp行列へ
+date = use_data_s[['cos_day','sin_day']]
+p_date = date.values
+
+#ラベルをバイナリの行列に変換
+categorical_labels = to_categorical(use_data_s['retweet'])
 labels = np.asarray(categorical_labels)
 
 print("Shape of data tensor:{}".format(data.shape))
+print("Shape of label tensor:{}".format(p_date.shape))
 print("Shape of label tensor:{}".format(labels.shape))
 
-# 行列をランダムにシャッフルする
-indices = np.arange(data.shape[0])
-np.random.shuffle(indices)
-data = data[indices]
-labels = labels[indices]
-users = n_postUser[indices]
 
 indices = [int(len(labels) * n) for n in [train, train + validation]]
 x1_train, x1_val, x1_test = np.split(data, indices)
-x2_train, x2_val, x2_test = np.split(users, indices)
+x2_train, x2_val, x2_test = np.split(p_date, indices)
 y_train, y_val, y_test = np.split(labels, indices)
 
 # +
 p_input = Input(shape=(50, ), dtype='int32', name='Input_postText')
-i_input = Input(shape=(1, ), name='Input_ids')
+i_input = Input(shape=(2, ), name='Input_ids')
 
 #テキストの学習
 em = Embedding(input_dim=20000, output_dim=50, input_length=50, name='Embedding')(p_input)
 d_em = Dropout(0.5)(em)
-lstm_out = LSTM(32, name='LSTM')(d_em)
+lstm_out = LSTM(32, kernel_initializer=weight_variable, name='LSTM')(d_em)
 d_lstm_out = Dropout(0.5)(lstm_out)
 #2つ目のデータ学習
 i2 = Dense(16, activation='relu', name = 'dence1')(i_input)
@@ -182,31 +162,42 @@ d_i2 = Dropout(0.5)(i2)
 x = concatenate([d_lstm_out, d_i2], name='merge1')
 
 m2 = Dense(16, activation='relu', name = 'dence')(x)
-d_m2 = Dropout(0.5)(m2)
-output = Dense(2, activation='softmax', name = 'output')(d_m2)
+#d_m2 = Dropout(0.5)(m2)
+output = Dense(2, activation='softmax', name = 'output')(x)
 
-optimizer = Adam(lr=1e-3)
+optimizer = Adam(lr=1e-4)
 model = Model(inputs=[p_input, i_input], outputs = output)
 model.compile(optimizer=optimizer, loss='categorical_crossentropy',  metrics=['acc', macro_precision, macro_recall, macro_f_measure])
 model.summary()
 #plot_model(model, show_shapes=True, show_layer_names=True, to_file='model_image/model2.png')
 
 
-early_stopping = EarlyStopping(patience=2, verbose=1)
+early_stopping = EarlyStopping(patience=1, verbose=1)
 # -
 
 history = model.fit([x1_train, x2_train], y_train,
                     epochs=100, 
                     batch_size=256,
-                    validation_data=([x1_val, x2_val], y_val))
+                    validation_data=([x1_val, x2_val], y_val),
+                   callbacks=[early_stopping])
 
 loss_and_metrics = model.evaluate([x1_test, x2_test], y_test)
 print(loss_and_metrics)
 
-classes = model.predict([x1_test, x2_test])
-np.savetxt('Mult_predict.csv', classes, delimiter = ',')
-
 model.metrics_names
+
+#予測
+classes = model.predict([x1_test, x2_test])
+#予測結果を保存して与えたデータと結合
+columns = ['not publish', 'publish']
+result = pd.DataFrame(classes, columns = columns)
+test_data = use_data_s[15998:19999]
+n_test_data = test_data.reset_index()
+predict_result = n_test_data.join(result)
+predict_result.drop(['user_id','tweet_id','tweet2', 'cos_day','sin_day', 'image_url', 'tag2', 'user_id2'], axis=1, inplace=True)
+
+#予測結果の書き出し
+predict_result.to_csv("result/B/result.csv",index=False, sep=",")
 
 # +
 # %matplotlib inline
@@ -221,7 +212,7 @@ plt.plot(epochs, acc, 'b--', label='Training acc')
 plt.plot(epochs, val_acc, 'b', label='Validation acc')
 plt.title('Training and validation accuracy')
 plt.legend()
-#plt.savefig("RNN_tweet/Figs/N_method1/N_acc.png")
+#plt.savefig("result/B/test_and_val_acc.png")
 
 plt.figure()
 
@@ -229,7 +220,7 @@ plt.plot(epochs, loss, 'b--', label='Training loss')
 plt.plot(epochs, val_loss, 'b', label='Validation loss')
 plt.title('Training and validation loss')
 plt.legend()
-#plt.savefig("RNN_tweet/Figs/N_method1/N_loss.png")
+#plt.savefig("result/B/test_and_val_loss.png")
 
 plt.figure()
 
@@ -247,9 +238,7 @@ ax_acc.set_xlabel('epochs')
 ax_acc.set_ylabel('Validation acc')
 ax_loss.grid(True)
 ax_loss.set_ylabel('Validation loss')
-#plt.savefig("N_f_measure.png")
+#plt.savefig("result/B/val_acc_loss.png")
 plt.show()
 # -
-
-
-
+model.save('Datas/models/model1_dA.h5')

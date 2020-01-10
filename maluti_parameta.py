@@ -19,13 +19,6 @@ from keras.callbacks import EarlyStopping
 from keras.utils import plot_model
 import numpy as np
 from keras.optimizers import Adam
-from keras.preprocessing.text import Tokenizer
-from keras.preprocessing.sequence import pad_sequences
-from keras.utils.np_utils import to_categorical
-import keras.backend as K
-from functools import partial
-import matplotlib.pyplot as plt
-import pandas as pd
 
 # +
 #ツイートのテキスト読み込み
@@ -64,6 +57,8 @@ for i in uID:
 
 n_postUser = np.array(post_user)
 
+n_postUser
+
 # +
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
@@ -71,7 +66,7 @@ import numpy as np
 from keras.utils.np_utils import to_categorical
 
 maxlen = 50
-training_samples = 8000 # training data 80 : validation data 20
+training_samples = 7000 # training data 80 : validation data 20
 validation_samples = 1000
 test_samples = len(lines) - (training_samples + validation_samples)
 max_words = 20000
@@ -94,12 +89,9 @@ print("Shape of data tensor:{}".format(data.shape))
 print("Shape of label tensor:{}".format(labels.shape))
 
 #学習データとテストデータに分割
-x1_test = data[training_samples + validation_samples: training_samples + validation_samples+test_samples]
-x2_test = n_postUser[training_samples + validation_samples: training_samples + validation_samples+test_samples]
-y_test = labels[training_samples + validation_samples: training_samples + validation_samples+test_samples]
-data = data[:training_samples + validation_samples]
-labels = labels[:training_samples + validation_samples]
-n_postUser = n_postUser[:training_samples + validation_samples]
+#data = data[:training_samples + validation_samples]
+#labels = labels[:training_samples + validation_samples]
+#n_postUser = n_postUser[:training_samples + validation_samples]
 
 
 # 行列をランダムにシャッフルする
@@ -115,6 +107,12 @@ y_train = labels[:training_samples]
 x1_val = data[training_samples: training_samples + validation_samples]
 x2_val = users[training_samples: training_samples + validation_samples]
 y_val = labels[training_samples: training_samples + validation_samples]
+x1_test = data[training_samples + validation_samples: training_samples + validation_samples +test_samples]
+x2_test = users[training_samples + validation_samples: training_samples + validation_samples +test_samples]
+y_test = labels[training_samples + validation_samples: training_samples + validation_samples +test_samples]
+# -
+
+print(x1_test)
 
 # +
 import keras.backend as K
@@ -192,35 +190,27 @@ def macro_f_measure(y_true, y_pred):
 
 
 # +
-p_input = Input(shape=(50, ), dtype='int32', name='Input_postText')
-t_input = Input(shape=(10, ), dtype='int32', name='Input_tag')
-o1_input = Input(shape=(1,), name='Input_other1')
-o2_input = Input(shape=(1,), name='Input_other2')
+p_input = Input(shape=(50, ), dtype='int32', name='input_postText')
+u_input = Input(shape=(1, ), dtype='int32', name='input_userID')
 
-#テキストとタグの学習
-x = concatenate([p_input, t_input], name='merge1')
-em = Embedding(input_dim=20000, output_dim=60, input_length=60, name='Embedding')(x)
+
+#em = Embedding(input_dim=20000, output_dim=1024, input_length=50)(p_input)
+#shered_lstm = LSTM(32)
+#p_lstm = shered_lstm(em)
+#u_lstm = shered_lstm(u_input)
+
+x = concatenate([p_input, u_input])
+em = Embedding(input_dim=20000, output_dim=50, input_length=51)(x)
 d_em = Dropout(0.5)(em)
-lstm_out = LSTM(32, name='LSTM')(d_em)
+lstm_out = LSTM(32)(d_em)
 d_lstm_out = Dropout(0.5)(lstm_out)
+output = Dense(2, activation='softmax', name = 'output')(d_lstm_out)
 
-#3つ目のデータ学習
-i3 = Dense(16, activation='relu', name='dence1')(o1_input)
-d_i3 = Dropout(0.5)(i3)
-
-#4つ目のデータ学習
-i4 = Dense(16, activation='relu', name='dence2')(o2_input)
-d_i4 = Dropout(0.5)(i4)
-
-x2 = concatenate([d_lstm_out, d_i3, d_i4], name='merge2')
-m2 = Dense(16, activation='relu', name = 'dence')(x2)
-d_m2 = Dropout(0.5)(m2)
-output = Dense(2, activation='softmax', name = 'output')(d_m2)
-
-model = Model(inputs=[p_input, t_input, o1_input, o2_input], outputs = output)
+model = Model(inputs=[p_input, u_input], outputs = output)
 model.compile(optimizer='Adam', loss='categorical_crossentropy',  metrics=['acc', macro_precision, macro_recall, macro_f_measure])
 model.summary()
-#plot_model(model, show_shapes=True, show_layer_names=True, to_file='model_image/model7.png')
+#plot_model(model, show_shapes=True, show_layer_names=True, to_file='MultiParameter_model.png')
+
 
 early_stopping = EarlyStopping(patience=0, verbose=1)
 # -
@@ -238,5 +228,29 @@ classes = model.predict([x1_test, x2_test])
 np.savetxt('Mult_predict.csv', classes, delimiter = ',')
 
 model.metrics_names
+
+# +
+import matplotlib.pyplot as plt
+
+val_acc = history.history['val_acc']
+val_loss = history.history['val_loss']
+epochs = range(1, len(val_acc) + 1)
+
+fig = plt.figure()
+ax_acc = fig.add_subplot(111)
+ax_acc.plot(epochs, val_acc, 'b--', label='Validation acc')
+plt.legend(bbox_to_anchor=(0, 1), loc='upper left', borderaxespad=0.5, fontsize=10)
+
+ax_loss = ax_acc.twinx()
+ax_loss.plot(epochs, val_loss, 'b', label='Validation loss')
+plt.legend(bbox_to_anchor=(0, 0.9), loc='upper left', borderaxespad=0.5, fontsize=10)
+plt.title('Validation acc and Validation loss')
+ax_acc.set_xlabel('epochs')
+ax_acc.set_ylabel('Validation acc')
+ax_loss.grid(True)
+ax_loss.set_ylabel('Validation loss')
+
+plt.show()
+# -
 
 
