@@ -26,6 +26,7 @@ import keras.backend as K
 from functools import partial
 import matplotlib.pyplot as plt
 import pandas as pd
+from keras.layers.normalization import BatchNormalization
 
 
 # +
@@ -153,14 +154,15 @@ i_input = Input(shape=(1, ), name='Input_ids')
 #テキストの学習
 em = Embedding(input_dim=20000, output_dim=50, input_length=50, name='Embedding')(p_input)
 d_em = Dropout(0.5)(em)
-lstm_out = LSTM(32, kernel_initializer=weight_variable , name='LSTM')(d_em)
+lstm_out = LSTM(32, kernel_initializer=weight_variable , kernel_regularizer=regularizers.l1_l2(0.001), name='LSTM')(d_em)
 d_lstm_out = Dropout(0.5)(lstm_out)
 #2つ目のデータ学習
-i2 = Dense(16, activation='relu', name = 'dence1')(i_input)
+i2 = Dense(16, activation='elu',kernel_regularizer=regularizers.l1_l2(0.001),  name = 'dence1')(i_input)
 d_i2 = Dropout(0.5)(i2)
 x = concatenate([d_lstm_out, d_i2], name='merge1')
 
-m2 = Dense(16, activation='relu', name = 'dence')(x)
+m2 = Dense(16, activation='elu', kernel_regularizer=regularizers.l1_l2(0.001), name = 'dence')(x)
+m2 = BatchNormalization()(m2)
 d_m2 = Dropout(0.5)(m2)
 output = Dense(2, activation='softmax', name = 'output')(d_m2)
 
@@ -171,7 +173,7 @@ model.summary()
 #plot_model(model, show_shapes=True, show_layer_names=True, to_file='model_image/model2.png')
 
 
-early_stopping = EarlyStopping(patience=2, verbose=1)
+early_stopping = EarlyStopping(patience=5, verbose=1)
 # -
 
 history = model.fit([x1_train, x2_train], y_train,
@@ -211,7 +213,7 @@ plt.plot(epochs, acc, 'b--', label='Training acc')
 plt.plot(epochs, val_acc, 'b', label='Validation acc')
 plt.title('Training and validation accuracy')
 plt.legend()
-#plt.savefig("result/A/test_and_val_acc.png")
+plt.savefig("result/A/test_and_val_acc.png")
 
 plt.figure()
 
@@ -219,7 +221,7 @@ plt.plot(epochs, loss, 'b--', label='Training loss')
 plt.plot(epochs, val_loss, 'b', label='Validation loss')
 plt.title('Training and validation loss')
 plt.legend()
-#plt.savefig("result/A/test_and_val_loss.png")
+plt.savefig("result/A/test_and_val_loss.png")
 
 plt.figure()
 
@@ -237,7 +239,9 @@ ax_acc.set_xlabel('epochs')
 ax_acc.set_ylabel('Validation acc')
 ax_loss.grid(True)
 ax_loss.set_ylabel('Validation loss')
-#plt.savefig("result/A/val_acc_loss.png")
+plt.savefig("result/A/val_acc_loss.png")
 plt.show()
 # -
-model.save('Datas/models/model1_dA.h5')
+model.save('result/A/model2_dA.h5')
+
+
