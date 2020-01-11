@@ -4,5 +4,7 @@ Datas/
 .DS_Store
 *.txt
 *.csv
+*.h5
+*.png
 Pipfile
 Pipfile.lock
