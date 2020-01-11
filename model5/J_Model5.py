@@ -27,10 +27,8 @@ from functools import partial
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# +
-import keras.backend as K
-from functools import partial
 
+# +
 def normalize_y_pred(y_pred):
     return K.one_hot(K.argmax(y_pred), y_pred.shape[-1])
 
@@ -137,13 +135,8 @@ print("Found {} unique tokens.".format(len(word_index)))
 data = pad_sequences(sequences, maxlen=maxlen)
 t_data =  pad_sequences(sequences2, maxlen=tag_maxlen)
 
-#user_idをnp行列に変換
-post_user = np.array(use_data['user_id2'])
 #imageをnp行列に変換
 img = np.array(use_data['image'])
-#sin,cosデータをまとめてnp行列へ
-date = use_data_s[['cos_day','sin_day']]
-p_date = date.values
 
 #ラベルをバイナリの行列に変換
 categorical_labels = to_categorical(use_data_s['retweet'])
@@ -151,26 +144,20 @@ labels = np.asarray(categorical_labels)
 
 print("Shape of data tensor:{}".format(data.shape))
 print("Shape of label tensor:{}".format(t_data.shape))
-print("Shape of label tensor:{}".format(post_user.shape))
 print("Shape of label tensor:{}".format(img.shape))
 print("Shape of label tensor:{}".format(labels.shape))
-print("Shape of label tensor:{}".format(p_date.shape))
 
 
 indices = [int(len(labels) * n) for n in [train, train + validation]]
 x1_train, x1_val, x1_test = np.split(data, indices)
 x2_train, x2_val, x2_test = np.split(t_data, indices)
-x3_train, x3_val, x3_test = np.split(post_user, indices)
-x4_train, x4_val, x4_test = np.split(img, indices)
-x5_train, x5_val, x5_test = np.split(p_date, indices)
+x3_train, x3_val, x3_test = np.split(img, indices)
 y_train, y_val, y_test = np.split(labels, indices)
 
 # +
 p_input = Input(shape=(50, ), dtype='int32', name='Input_postText')
 t_input = Input(shape=(10, ), dtype='int32', name='Input_tag')
-u_input = Input(shape=(1,), name='Input_id')
-i_input = Input(shape=(1,), name='Input_image')
-d_input = Input(shape=(2,), name='Input_postdate')
+o_input = Input(shape=(1,), name='Input_others')
 
 #テキストとタグの学習
 x = concatenate([p_input, t_input], name='merge1')
@@ -180,38 +167,30 @@ lstm_out = LSTM(32, kernel_initializer=weight_variable, name='LSTM')(d_em)
 d_lstm_out = Dropout(0.5)(lstm_out)
 
 #3つ目のデータ学習
-user = Dense(16, activation='relu', name='user_dence')(u_input)
-d_user = Dropout(0.5)(user)
+i3 = Dense(16, activation='relu', name='dence1')(o_input)
+d_i3 = Dropout(0.5)(i3)
 
-#4つ目のデータ学習
-image = Dense(16, activation='relu', name='image_dence')(i_input)
-d_image = Dropout(0.5)(image)
-
-#5つ目のデータ学習
-pdate = Dense(16, activation='relu', name='pdate_dence')(d_input)
-d_pdate = Dropout(0.5)(pdate)
-
-x2 = concatenate([d_lstm_out, d_user, d_image, d_pdate], name='merge2')
+x2 = concatenate([d_lstm_out, d_i3], name='merge2')
 m2 = Dense(16, activation='relu', name = 'dence')(x2)
 d_m2 = Dropout(0.5)(m2)
 output = Dense(2, activation='softmax', name = 'output')(d_m2)
 
-model = Model(inputs=[p_input, t_input, u_input, i_input, d_input], outputs = output)
+model = Model(inputs=[p_input, t_input, o_input], outputs = output)
 optimizer = Adam(lr=1e-3)
 model.compile(optimizer=optimizer, loss='categorical_crossentropy',  metrics=['acc', macro_precision, macro_recall, macro_f_measure])
 model.summary()
-#plot_model(model, show_shapes=True, show_layer_names=True, to_file='model_image/model8.png')
+#plot_model(model, show_shapes=True, show_layer_names=True, to_file='model_image/model5.png')
 
 early_stopping = EarlyStopping(patience=0, verbose=1)
 # -
 
-history = model.fit([x1_train, x2_train, x3_train, x4_train, x5_train], y_train,
+history = model.fit([x1_train, x2_train, x3_train], y_train,
                     epochs=100, 
                     batch_size=256,
-                    validation_data=([x1_val, x2_val, x3_val, x4_val, x5_val], y_val),
+                    validation_data=([x1_val, x2_val, x3_val], y_val),
                     callbacks=[early_stopping])
 
-loss_and_metrics = model.evaluate([x1_test, x2_test, x3_test, x4_test, x5_test], y_test)
+loss_and_metrics = model.evaluate([x1_test, x2_test, x3_test], y_test)
 print(loss_and_metrics)
 
 model.metrics_names
@@ -226,7 +205,7 @@ predict_result = n_test_data.join(result)
 predict_result.drop(['user_id','tweet_id','tweet2', 'cos_day','sin_day', 'image_url', 'tag2', 'user_id2'], axis=1, inplace=True)
 
 #予測結果の書き出し
-predict_result.to_csv("result/O/result.csv",index=False, sep=",")
+predict_result.to_csv("result/J/result.csv",index=False, sep=",")
 
 # +
 # %matplotlib inline
@@ -241,7 +220,7 @@ plt.plot(epochs, acc, 'b--', label='Training acc')
 plt.plot(epochs, val_acc, 'b', label='Validation acc')
 plt.title('Training and validation accuracy')
 plt.legend()
-#plt.savefig("result/0/test_and_val_acc.png")
+#plt.savefig("result/J/test_and_val_acc.png")
 
 plt.figure()
 
@@ -249,7 +228,7 @@ plt.plot(epochs, loss, 'b--', label='Training loss')
 plt.plot(epochs, val_loss, 'b', label='Validation loss')
 plt.title('Training and validation loss')
 plt.legend()
-#plt.savefig("result/O/test_and_val_loss.png")
+#plt.savefig("result/J/test_and_val_loss.png")
 
 plt.figure()
 
@@ -267,8 +246,8 @@ ax_acc.set_xlabel('epochs')
 ax_acc.set_ylabel('Validation acc')
 ax_loss.grid(True)
 ax_loss.set_ylabel('Validation loss')
-#plt.savefig("result/O/val_acc_loss.png")
+#plt.savefig("result/J/val_acc_loss.png")
 plt.show()
 # -
 
-model.save('Datas/model8_dO.h5')
+model.save('Datas/model5_dJ.h5')
