@@ -154,16 +154,16 @@ i_input = Input(shape=(1, ), name='Input_ids')
 #テキストの学習
 em = Embedding(input_dim=20000, output_dim=50, input_length=50, name='Embedding')(p_input)
 d_em = Dropout(0.5)(em)
-lstm_out = LSTM(32, kernel_initializer=weight_variable , kernel_regularizer=regularizers.l1_l2(0.001), name='LSTM')(d_em)
+lstm_out = LSTM(32, kernel_initializer=weight_variable, name='LSTM')(d_em)
 d_lstm_out = Dropout(0.5)(lstm_out)
 #2つ目のデータ学習
-i2 = Dense(16, activation='elu',kernel_regularizer=regularizers.l1_l2(0.001),  name = 'dence1')(i_input)
+i2 = Dense(16, activation='elu',  name = 'dence1')(i_input)
 d_i2 = Dropout(0.5)(i2)
 x = concatenate([d_lstm_out, d_i2], name='merge1')
 
-m2 = Dense(16, activation='elu', kernel_regularizer=regularizers.l1_l2(0.001), name = 'dence')(x)
-m2 = BatchNormalization()(m2)
+m2 = Dense(16, activation='elu', name = 'dence')(x)
 d_m2 = Dropout(0.5)(m2)
+#m2 = BatchNormalization()(m2)
 output = Dense(2, activation='softmax', name = 'output')(d_m2)
 
 optimizer = Adam(lr=1e-4)

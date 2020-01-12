@@ -27,10 +27,8 @@ from functools import partial
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# +
-import keras.backend as K
-from functools import partial
 
+# +
 def normalize_y_pred(y_pred):
     return K.one_hot(K.argmax(y_pred), y_pred.shape[-1])
 
@@ -149,10 +147,10 @@ categorical_labels = to_categorical(use_data_s['retweet'])
 labels = np.asarray(categorical_labels)
 
 print("Shape of data tensor:{}".format(data.shape))
-print("Shape of label tensor:{}".format(t_data.shape))
-print("Shape of label tensor:{}".format(img.shape))
+print("Shape of t_data tensor:{}".format(t_data.shape))
+print("Shape of img tensor:{}".format(img.shape))
+print("Shape of p_date tensor:{}".format(p_date.shape))
 print("Shape of label tensor:{}".format(labels.shape))
-print("Shape of label tensor:{}".format(p_date.shape))
 
 
 indices = [int(len(labels) * n) for n in [train, train + validation]]
@@ -166,7 +164,7 @@ y_train, y_val, y_test = np.split(labels, indices)
 p_input = Input(shape=(50, ), dtype='int32', name='Input_postText')
 t_input = Input(shape=(10, ), dtype='int32', name='Input_tag')
 o1_input = Input(shape=(1,), name='Input_other1')
-o2_input = Input(shape=(1,), name='Input_other2')
+o2_input = Input(shape=(2,), name='Input_other2')
 
 #テキストとタグの学習
 x = concatenate([p_input, t_input], name='merge1')
@@ -176,15 +174,15 @@ lstm_out = LSTM(32, kernel_initializer=weight_variable, name='LSTM')(d_em)
 d_lstm_out = Dropout(0.5)(lstm_out)
 
 #3つ目のデータ学習
-i3 = Dense(16, activation='relu', name='dence1')(o1_input)
+i3 = Dense(16, activation='elu', name='dence1')(o1_input)
 d_i3 = Dropout(0.5)(i3)
 
 #4つ目のデータ学習
-i4 = Dense(16, activation='relu', name='dence2')(o2_input)
+i4 = Dense(16, activation='elu', name='dence2')(o2_input)
 d_i4 = Dropout(0.5)(i4)
 
 x2 = concatenate([d_lstm_out, d_i3, d_i4], name='merge2')
-m2 = Dense(16, activation='relu', name = 'dence')(x2)
+m2 = Dense(16, activation='elu', name = 'dence')(x2)
 d_m2 = Dropout(0.5)(m2)
 output = Dense(2, activation='softmax', name = 'output')(d_m2)
 

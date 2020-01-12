@@ -27,10 +27,8 @@ from functools import partial
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# +
-import keras.backend as K
-from functools import partial
 
+# +
 def normalize_y_pred(y_pred):
     return K.one_hot(K.argmax(y_pred), y_pred.shape[-1])
 
@@ -145,9 +143,9 @@ categorical_labels = to_categorical(use_data_s['retweet'])
 labels = np.asarray(categorical_labels)
 
 print("Shape of data tensor:{}".format(data.shape))
-print("Shape of label tensor:{}".format(post_user.shape))
+print("Shape of post_user tensor:{}".format(post_user.shape))
+print("Shape of p_date tensor:{}".format(p_date.shape))
 print("Shape of label tensor:{}".format(labels.shape))
-print("Shape of label tensor:{}".format(p_date.shape))
 
 
 indices = [int(len(labels) * n) for n in [train, train + validation]]
@@ -167,15 +165,15 @@ d_em = Dropout(0.5)(em)
 lstm_out = LSTM(32, kernel_initializer=weight_variable, name='LSTM')(d_em)
 d_lstm_out = Dropout(0.5)(lstm_out)
 #2つ目の入力
-i2 = Dense(16, activation='relu', name = 'dence1')(o1_input)
+i2 = Dense(16, activation='elu', name = 'dence1')(o1_input)
 d_i2 = Dropout(0.5)(i2)
 #3つ目の入力
-i3 = Dense(16, activation='relu', name = 'dence2')(o2_input)
+i3 = Dense(16, activation='elu', name = 'dence2')(o2_input)
 d_i3 = Dropout(0.5)(i3)
 
 x = concatenate([d_lstm_out, d_i2, d_i3], name='merge1')
 
-m2 = Dense(16, activation='relu', name = 'dence')(x)
+m2 = Dense(16, activation='elu', name = 'dence')(x)
 d_m2 = Dropout(0.5)(m2)
 output = Dense(2, activation='softmax', name = 'output')(d_m2)
 
@@ -185,8 +183,7 @@ model.compile(optimizer=optimizer, loss='categorical_crossentropy',  metrics=['a
 model.summary()
 #plot_model(model, show_shapes=True, show_layer_names=True, to_file='model_image/model4.png')
 
-
-early_stopping = EarlyStopping(patience=0, verbose=1)
+early_stopping = EarlyStopping(patience=3, verbose=1)
 # -
 
 history = model.fit([x1_train, x2_train, x3_train], y_train,

@@ -140,7 +140,7 @@ categorical_labels = to_categorical(use_data_s['retweet'])
 labels = np.asarray(categorical_labels)
 
 print("Shape of data tensor:{}".format(data.shape))
-print("Shape of label tensor:{}".format(t_data.shape))
+print("Shape of t_data tensor:{}".format(t_data.shape))
 print("Shape of label tensor:{}".format(labels.shape))
 
 
@@ -166,7 +166,7 @@ model.compile(optimizer=optimizer, loss='categorical_crossentropy',  metrics=['a
 model.summary()
 #plot_model(model, show_shapes=True, show_layer_names=True, to_file='model_image/model3.png')
 
-early_stopping = EarlyStopping(patience=0, verbose=1)
+early_stopping = EarlyStopping(patience=3, verbose=1)
 # -
 
 history = model.fit([x1_train, x2_train], y_train,

@@ -137,7 +137,7 @@ categorical_labels = to_categorical(use_data_s['retweet'])
 labels = np.asarray(categorical_labels)
 
 print("Shape of data tensor:{}".format(data.shape))
-print("Shape of label tensor:{}".format(img.shape))
+print("Shape of img tensor:{}".format(img.shape))
 print("Shape of label tensor:{}".format(labels.shape))
 
 
@@ -156,16 +156,16 @@ d_em = Dropout(0.5)(em)
 lstm_out = LSTM(32, kernel_initializer=weight_variable, name='LSTM')(d_em)
 d_lstm_out = Dropout(0.5)(lstm_out)
 #2つ目のデータ学習
-i2 = Dense(16, activation='relu', name = 'dence1')(i_input)
+i2 = Dense(16, activation='elu', name = 'dence1')(i_input)
 d_i2 = Dropout(0.5)(i2)
 x = concatenate([d_lstm_out, d_i2], name='merge1')
 
-m2 = Dense(16, activation='relu', name = 'dence')(x)
+m2 = Dense(16, activation='elu', name = 'dence')(x)
 d_m2 = Dropout(0.5)(m2)
 output = Dense(2, activation='softmax', name = 'output')(d_m2)
 
-optimizer = Adam(lr=1e-4)
 model = Model(inputs=[p_input, i_input], outputs = output)
+optimizer = Adam(lr=1e-4)
 model.compile(optimizer=optimizer, loss='categorical_crossentropy',  metrics=['acc', macro_precision, macro_recall, macro_f_measure])
 model.summary()
 #plot_model(model, show_shapes=True, show_layer_names=True, to_file='model_image/model2.png')

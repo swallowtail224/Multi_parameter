@@ -143,8 +143,8 @@ categorical_labels = to_categorical(use_data_s['retweet'])
 labels = np.asarray(categorical_labels)
 
 print("Shape of data tensor:{}".format(data.shape))
-print("Shape of label tensor:{}".format(t_data.shape))
-print("Shape of label tensor:{}".format(post_user.shape))
+print("Shape of t_data tensor:{}".format(t_data.shape))
+print("Shape of post_user tensor:{}".format(post_user.shape))
 print("Shape of label tensor:{}".format(labels.shape))
 
 
@@ -167,11 +167,11 @@ lstm_out = LSTM(32, kernel_initializer=weight_variable, name='LSTM')(d_em)
 d_lstm_out = Dropout(0.5)(lstm_out)
 
 #3つ目のデータ学習
-i3 = Dense(16, activation='relu', name='dence1')(o_input)
+i3 = Dense(16, activation='elu', name='dence1')(o_input)
 d_i3 = Dropout(0.5)(i3)
 
 x2 = concatenate([d_lstm_out, d_i3], name='merge2')
-m2 = Dense(16, activation='relu', name = 'dence')(x2)
+m2 = Dense(16, activation='elu', name = 'dence')(x2)
 d_m2 = Dropout(0.5)(m2)
 output = Dense(2, activation='softmax', name = 'output')(d_m2)
 

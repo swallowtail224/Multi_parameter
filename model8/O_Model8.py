@@ -27,10 +27,8 @@ from functools import partial
 import matplotlib.pyplot as plt
 import pandas as pd
 
-# +
-import keras.backend as K
-from functools import partial
 
+# +
 def normalize_y_pred(y_pred):
     return K.one_hot(K.argmax(y_pred), y_pred.shape[-1])
 
@@ -150,11 +148,11 @@ categorical_labels = to_categorical(use_data_s['retweet'])
 labels = np.asarray(categorical_labels)
 
 print("Shape of data tensor:{}".format(data.shape))
-print("Shape of label tensor:{}".format(t_data.shape))
-print("Shape of label tensor:{}".format(post_user.shape))
-print("Shape of label tensor:{}".format(img.shape))
+print("Shape of t_data tensor:{}".format(t_data.shape))
+print("Shape of post_user tensor:{}".format(post_user.shape))
+print("Shape of img tensor:{}".format(img.shape))
+print("Shape of p_date tensor:{}".format(p_date.shape))
 print("Shape of label tensor:{}".format(labels.shape))
-print("Shape of label tensor:{}".format(p_date.shape))
 
 
 indices = [int(len(labels) * n) for n in [train, train + validation]]
@@ -180,19 +178,19 @@ lstm_out = LSTM(32, kernel_initializer=weight_variable, name='LSTM')(d_em)
 d_lstm_out = Dropout(0.5)(lstm_out)
 
 #3つ目のデータ学習
-user = Dense(16, activation='relu', name='user_dence')(u_input)
+user = Dense(16, activation='elu', name='user_dence')(u_input)
 d_user = Dropout(0.5)(user)
 
 #4つ目のデータ学習
-image = Dense(16, activation='relu', name='image_dence')(i_input)
+image = Dense(16, activation='elu', name='image_dence')(i_input)
 d_image = Dropout(0.5)(image)
 
 #5つ目のデータ学習
-pdate = Dense(16, activation='relu', name='pdate_dence')(d_input)
+pdate = Dense(16, activation='elu', name='pdate_dence')(d_input)
 d_pdate = Dropout(0.5)(pdate)
 
 x2 = concatenate([d_lstm_out, d_user, d_image, d_pdate], name='merge2')
-m2 = Dense(16, activation='relu', name = 'dence')(x2)
+m2 = Dense(16, activation='elu', name = 'dence')(x2)
 d_m2 = Dropout(0.5)(m2)
 output = Dense(2, activation='softmax', name = 'output')(d_m2)
 

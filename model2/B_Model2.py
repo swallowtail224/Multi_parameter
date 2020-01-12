@@ -26,6 +26,7 @@ import keras.backend as K
 from functools import partial
 import matplotlib.pyplot as plt
 import pandas as pd
+from keras.layers.normalization import BatchNormalization
 
 
 # +
@@ -138,7 +139,7 @@ categorical_labels = to_categorical(use_data_s['retweet'])
 labels = np.asarray(categorical_labels)
 
 print("Shape of data tensor:{}".format(data.shape))
-print("Shape of label tensor:{}".format(p_date.shape))
+print("Shape of p_date tensor:{}".format(p_date.shape))
 print("Shape of label tensor:{}".format(labels.shape))
 
 
@@ -157,13 +158,14 @@ d_em = Dropout(0.5)(em)
 lstm_out = LSTM(32, kernel_initializer=weight_variable, name='LSTM')(d_em)
 d_lstm_out = Dropout(0.5)(lstm_out)
 #2つ目のデータ学習
-i2 = Dense(16, activation='relu', name = 'dence1')(i_input)
+i2 = Dense(16, activation='elu', name = 'dence1')(i_input)
 d_i2 = Dropout(0.5)(i2)
 x = concatenate([d_lstm_out, d_i2], name='merge1')
 
-m2 = Dense(16, activation='relu', name = 'dence')(x)
-#d_m2 = Dropout(0.5)(m2)
-output = Dense(2, activation='softmax', name = 'output')(x)
+m2 = Dense(16, activation='elu', name = 'dence')(x)
+d_m2 = Dropout(0.5)(m2)
+#d_m2 = BatchNormalization()(d_m2)
+output = Dense(2, activation='softmax', name = 'output')(d_m2)
 
 optimizer = Adam(lr=1e-4)
 model = Model(inputs=[p_input, i_input], outputs = output)
@@ -172,7 +174,7 @@ model.summary()
 #plot_model(model, show_shapes=True, show_layer_names=True, to_file='model_image/model2.png')
 
 
-early_stopping = EarlyStopping(patience=1, verbose=1)
+early_stopping = EarlyStopping(patience=3, verbose=1)
 # -
 
 history = model.fit([x1_train, x2_train], y_train,
@@ -241,4 +243,4 @@ ax_loss.set_ylabel('Validation loss')
 #plt.savefig("result/B/val_acc_loss.png")
 plt.show()
 # -
-model.save('Datas/models/model1_dA.h5')
+model.save('result/B/model2_dB.h5')
