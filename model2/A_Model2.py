@@ -27,6 +27,7 @@ from functools import partial
 import matplotlib.pyplot as plt
 import pandas as pd
 from keras.layers.normalization import BatchNormalization
+from keras.metrics import categorical_accuracy
 
 
 # +
@@ -168,7 +169,7 @@ output = Dense(2, activation='softmax', name = 'output')(d_m2)
 
 optimizer = Adam(lr=1e-4)
 model = Model(inputs=[p_input, i_input], outputs = output)
-model.compile(optimizer=optimizer, loss='categorical_crossentropy',  metrics=['acc', macro_precision, macro_recall, macro_f_measure])
+model.compile(optimizer=optimizer, loss='categorical_crossentropy',  metrics=[categorical_accuracy, macro_precision, macro_recall, macro_f_measure])
 model.summary()
 #plot_model(model, show_shapes=True, show_layer_names=True, to_file='model_image/model2.png')
 
@@ -185,10 +186,31 @@ history = model.fit([x1_train, x2_train], y_train,
 loss_and_metrics = model.evaluate([x1_test, x2_test], y_test)
 print(loss_and_metrics)
 
+y_test2 = y_train.reshape(-1)
+result = np.zeros(y_test2.shape, int)
+for idx, data in enumerate(classes):
+    result[idx] = int(np.argmax(data))
+
+print('ターゲット')
+print(y_test2)
+print('ディープラーニングによる予測')
+print(result)
+
+# +
+# データ数をtotalに格納
+total = len(result)
+# ターゲット（正解）と予測が一致した数をsuccessに格納
+success = sum(result==y_test2)
+
+# 正解率をパーセント表示
+print('正解率')
+print(100.0*success/total)
+# -
+
 model.metrics_names
 
 #予測
-classes = model.predict([x1_test, x2_test])
+classes = model.predict([x1_train, x2_train], batch_size=1)
 #予測結果を保存して与えたデータと結合
 columns = ['not publish', 'publish']
 result = pd.DataFrame(classes, columns = columns)
